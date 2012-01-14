@@ -4,6 +4,10 @@
 ;;; bfi - brainf*ck interpreter
 ;;;
 
+;; sample - Hello world
+;; >+++++++++[<++++++++>-]<.>+++++++[<++++>-]<+.+++++++..+++.[-]>++++++++[<++++>-]<.>+++++++++++[<+++++>-]<.>++++++++[<+++>-]<.+++.------.--------.[-]>++++++++[<++++>-]<+.[-]++++++++++.
+
+
 (use srfi-1)
 (use file.util) ; file->string
 (use gauche.parseopt)
@@ -60,20 +64,17 @@
 (define (run-bf str mem)
   (interpret (parse str) 0 mem))
 
-
-;; TODO
-;;  - pipe -> execute and exit
-;;  - empty args -> repl
-
 (define (main args)
   (let-args (cdr args)
       ((memory-size "m|memory-size=i" 3000)
+       (interactive "i|interactive")
        (help "h|help" => usage)
        (else (opt . _)
              (print "Unknown option : " opt)
              (usage))
        . rest)
     (let ((mem (make-vector memory-size 0)))
-      (if (null? rest)
-          (repl mem)
-          (run-bf (file->string (car rest)) mem)))))
+      (cond ((and (null? rest) interactive)(repl mem))
+            ((null? rest)(run-bf (port->string (current-input-port)) mem))
+            ((run-bf (file->string (car rest)) mem))
+            (else (usage))))))
