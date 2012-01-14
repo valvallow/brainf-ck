@@ -4,6 +4,7 @@
 ;;; bfi - brainf*ck interpreter
 ;;;
 
+(use srfi-1)
 (use file.util) ; file->string
 (use gauche.parseopt)
 
@@ -12,12 +13,36 @@
   (exit 1))
 
 (define (interpret code ptr mem)
-  (print code)
-  (values ptr mem))
+  (let rec ((code code))
+    (if (null? code)
+        (values ptr mem)
+        (begin
+          (if (list? (car code))
+              (until (zero? (vector-ref mem ptr))
+                (rec (car code)))
+              (case (car code)
+                ((#\+)(inc! (vector-ref mem ptr)))
+                ((#\-)(dec! (vector-ref mem ptr)))
+                ((#\<)(dec! ptr))
+                ((#\>)(inc! ptr))
+                ((#\.)(write-byte (vector-ref mem ptr)) (flush))
+                ((#\,)(set! (vector-ref mem ptr)(read-byte (current-input-port))))))
+          (rec (cdr code))))))
 
 (define (parse str)
-  (let ((ls (string->list str)))
-    ls))
+  (let1 ls (string->list str)
+    (let rec ((ls ls)(acc '()))
+      (if (null? ls)
+          (reverse acc)
+          (case (car ls)
+            ((#\+ #\- #\< #\> #\. #\,)(rec (cdr ls)(cons (car ls) acc)))
+            ((#\[)(rec (let1 rest (drop-while (pa$ (complement equal?) #\])(cdr ls))
+                         (if (null? rest)
+                             '()
+                             (cdr rest)))
+                       (cons (rec (cdr ls) '()) acc)))
+            ((#\])(reverse acc))
+            (else (rec (cdr ls) acc)))))))
 
 (define (repl mem)
   (print ";; brainf*ck interactive shell")
@@ -34,6 +59,11 @@
 
 (define (run-bf str mem)
   (interpret (parse str) 0 mem))
+
+
+;; TODO
+;;  - pipe -> execute and exit
+;;  - empty args -> repl
 
 (define (main args)
   (let-args (cdr args)
