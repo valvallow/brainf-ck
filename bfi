@@ -1,0 +1,28 @@
+#!/usr/local/bin/gosh
+
+;;;
+;;; bfi - brainf*ck interpreter
+;;;
+
+(use file.util) ; file->string
+(use gauche.parseopt)
+
+(define (usage)
+  (print "Usage: bfi [options ...] [file]")
+  (exit 1))
+
+(define (interpret code ptr mem))
+(define (parse codestr))
+
+
+(define (main args)
+  (let-args (cdr args)
+      ((_ "h|help" => usage)
+       (else (opt . _)
+             (print "Unknown option : " opt)
+             (usage))
+       . rest)
+    (let1 codestr (if (null? rest)
+                      (port->string (current-input-port))
+                      (file->string (car rest)))
+      (print codestr))))
